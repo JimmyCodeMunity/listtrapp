@@ -42,10 +42,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get("/ad/getads");
       const data = response.data;
-      setAds(data);
+      // Handle both old and new API response formats
+      if (data.success && Array.isArray(data.data)) {
+        setAds(data.data);
+      } else if (Array.isArray(data)) {
+        setAds(data);
+      } else {
+        console.error("Unexpected API response format:", data);
+        setAds([]);
+      }
     } catch (error) {
       console.log("error", error);
       toast.error("error while fetching products");
+      setAds([]); // Set empty array on error
     }
   };
 
@@ -92,6 +101,9 @@ export const AuthProvider = ({ children }) => {
         const userData = await getCurrentUser();
         setUser(userData);
         
+        // Store session indicator (not the token itself)
+        localStorage.setItem("listrr_session", "active");
+        
         // Start token refresh interval
         startTokenRefreshInterval();
         
@@ -124,6 +136,9 @@ export const AuthProvider = ({ children }) => {
       
       // Clear user data from state
       setUser(null);
+      
+      // Clear session indicator
+      localStorage.removeItem("listrr_session");
       
       // Stop token refresh interval
       stopTokenRefreshInterval();
@@ -167,6 +182,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setAccessTokenState(null);
       clearAccessToken();
+      localStorage.removeItem("listrr_session");
       stopTokenRefreshInterval();
       
       return false;
@@ -184,8 +200,10 @@ export const AuthProvider = ({ children }) => {
       const currentTime = Date.now();
       const timeUntilExpiration = expirationTime - currentTime;
       
-      // Refresh if token expires in less than 5 minutes (300000 ms)
-      if (timeUntilExpiration < 300000 && timeUntilExpiration > 0) {
+      // Refresh if token expires in less than 4 hours (14400000 ms) for 2-day tokens
+      // This ensures we refresh well before expiration
+      if (timeUntilExpiration < 14400000 && timeUntilExpiration > 0) {
+        console.log(`🔄 Token expires in ${Math.round(timeUntilExpiration / 3600000)} hours, refreshing...`);
         refreshToken();
       }
     } catch (error) {
@@ -193,13 +211,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Start interval to check token expiration every minute
+  // Start interval to check token expiration every 30 minutes
   const startTokenRefreshInterval = () => {
     stopTokenRefreshInterval(); // Clear any existing interval
     
     tokenRefreshInterval.current = setInterval(() => {
       checkTokenExpiration();
-    }, 60000); // Check every minute
+    }, 1800000); // Check every 30 minutes (1800000 ms)
   };
 
   // Stop token refresh interval
@@ -215,26 +233,38 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       setLoading(true);
       try {
+        // Check if we have a stored session indicator
+        const hasSession = localStorage.getItem("listrr_session");
+        
+        if (hasSession) {
+          console.log("📱 Found session indicator, attempting refresh...");
+        }
+        
         // Attempt to refresh token to get new access token
-        console.log("Attempting to refresh token on page load...");
+        console.log("🔄 Attempting to refresh token on page load...");
         const refreshed = await refreshToken();
         
         if (refreshed) {
-          console.log("Token refresh successful, loading user data...");
+          console.log("✅ Token refresh successful, loading user data...");
           // Load user data if refresh succeeds
           const userData = await getCurrentUser();
           setUser(userData);
           
+          // Store session indicator (not the token itself)
+          localStorage.setItem("listrr_session", "active");
+          
           // Start token refresh interval
           startTokenRefreshInterval();
         } else {
-          console.log("Token refresh returned false");
+          console.log("❌ Token refresh returned false");
           setUser(null);
+          localStorage.removeItem("listrr_session");
         }
       } catch (error) {
         console.error("Auth check error:", error);
         console.error("Error details:", error.response?.data || error.message);
         setUser(null);
+        localStorage.removeItem("listrr_session");
       } finally {
         // Set loading to false after check completes
         setLoading(false);
@@ -256,6 +286,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setAccessTokenState(null);
       clearAccessToken();
+      localStorage.removeItem("listrr_session");
       stopTokenRefreshInterval();
       
       // Dispatch logout event for socket disconnection

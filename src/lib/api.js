@@ -45,7 +45,7 @@ api.interceptors.request.use(
 
 // Response interceptor to handle 401 errors and token refresh
 let refreshAttempts = 0;
-const MAX_REFRESH_ATTEMPTS = 2;
+const MAX_REFRESH_ATTEMPTS = 3; // Increased from 2 to 3
 
 api.interceptors.response.use(
   (response) => {
@@ -77,6 +77,7 @@ api.interceptors.response.use(
       // Check if we've exceeded max refresh attempts
       if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
         // Redirect to login after max attempts
+        console.log("❌ Max refresh attempts exceeded, logging out");
         refreshAttempts = 0;
         processQueue(new Error("Max refresh attempts exceeded"), null);
         
@@ -88,18 +89,23 @@ api.interceptors.response.use(
 
       isRefreshing = true;
       refreshAttempts++;
+      console.log(`🔄 Attempting token refresh (attempt ${refreshAttempts}/${MAX_REFRESH_ATTEMPTS})`);
 
       try {
-        // Call refresh token endpoint
+        // Call refresh token endpoint with longer timeout
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/auth/refresh`,
           {},
-          { withCredentials: true }
+          { 
+            withCredentials: true,
+            timeout: 15000 // 15 seconds timeout for refresh
+          }
         );
 
         if (response.data && response.data.accessToken) {
           // Update access token in memory
           accessToken = response.data.accessToken;
+          console.log("✅ Token refresh successful");
           
           // Reset refresh attempts on success
           refreshAttempts = 0;
@@ -114,12 +120,15 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
+        console.log(`❌ Token refresh failed (attempt ${refreshAttempts}):`, refreshError.message);
+        
         // Refresh failed
         processQueue(refreshError, null);
         
         // If we haven't hit max attempts, the error will be caught and retried
         // If we have hit max attempts, redirect to login
         if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+          console.log("❌ All refresh attempts failed, logging out");
           refreshAttempts = 0;
           window.dispatchEvent(new CustomEvent("unauthorized"));
         }

@@ -24,6 +24,14 @@ export const SocketProvider = ({ children }) => {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectTimeouts = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff
+  
+  // Use ref to store latest activeConversation to avoid stale closures
+  const activeConversationRef = useRef(activeConversation);
+  
+  // Update ref whenever activeConversation changes
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
 
   // Connect socket only when user is authenticated
   const connect = useCallback(() => {
@@ -134,48 +142,126 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Handle new message received
+  // Handle new message received - use ref to avoid stale closures
   const handleNewMessage = useCallback((message) => {
-    console.log("📨 New message received:", message);
-    console.log("Active conversation:", activeConversation?._id);
-    console.log("Message conversation:", message.conversationId);
+    const currentActiveConv = activeConversationRef.current;
     
     // Add to messages state if it's for the active conversation
     // Convert both to strings to ensure comparison works
-    const activeConvId = activeConversation?._id?.toString();
+    const activeConvId = currentActiveConv?._id?.toString();
     const messageConvId = message.conversationId?.toString();
     
-    console.log("Comparing (as strings):", { activeConvId, messageConvId });
-    
-    if (activeConversation && activeConvId === messageConvId) {
-      console.log("✅ Adding message to current conversation");
-      setMessages((prev) => [...prev, message]);
-    } else {
-      console.log("⚠️ Message not for active conversation");
+    if (currentActiveConv && activeConvId === messageConvId) {
+      setMessages((prev) => {
+        // Check for duplicates
+        const exists = prev.some(m => m._id === message._id);
+        if (exists) {
+          return prev;
+        }
+        return [...prev, message];
+      });
     }
 
     // Update conversations list
     setConversations((prev) => {
-      const conversationIndex = prev.findIndex(c => c._id === message.conversationId);
+      const conversationIndex = prev.findIndex(c => c._id?.toString() === message.conversationId?.toString());
       if (conversationIndex !== -1) {
-        const updated = [...prev];
-        updated[conversationIndex] = {
-          ...updated[conversationIndex],
+        const updatedConv = {
+          ...prev[conversationIndex],
           lastMessage: {
             text: message.text,
             senderId: message.senderId,
             createdAt: message.createdAt,
           },
-          unreadCount: {
-            ...updated[conversationIndex].unreadCount,
-            [user?._id]: (updated[conversationIndex].unreadCount?.[user?._id] || 0) + 1,
-          },
+          updatedAt: message.createdAt,
+          // Only increment unread count if message is from someone else
+          // senderId might be populated object or string
+          unreadCount: (typeof message.senderId === 'object' ? message.senderId?._id : message.senderId)?.toString() !== user?.user?._id?.toString() 
+            ? {
+                ...prev[conversationIndex].unreadCount,
+                [user?.user?._id]: (prev[conversationIndex].unreadCount?.[user?.user?._id] || 0) + 1,
+              }
+            : prev[conversationIndex].unreadCount,
         };
-        return updated;
+        
+        // Move updated conversation to top
+        const updated = [...prev];
+        updated.splice(conversationIndex, 1); // Remove from current position
+        return [updatedConv, ...updated]; // Add to top
       }
+      
+      // If conversation not found, we'll fetch it after this callback
       return prev;
     });
-  }, [activeConversation, user]);
+    
+    // After updating state, check if we need to fetch conversation details
+    const conversationExists = conversations.some(
+      c => c._id?.toString() === message.conversationId?.toString()
+    );
+    
+    if (!conversationExists && message.conversationId) {
+      // Fetch conversation details asynchronously
+      fetchConversationDetails(message.conversationId).catch(err => 
+        console.error("Failed to fetch conversation:", err)
+      );
+    }
+  }, [user, conversations]);
+  
+  // Fetch conversation details when a new conversation is detected
+  const fetchConversationDetails = useCallback(async (conversationId) => {
+    try {
+      // Get the conversation details with messages
+      const response = await api.get(`/conversations/${conversationId}/messages?limit=1`);
+      if (response.data && response.data.messages && response.data.messages.length > 0) {
+        const lastMessage = response.data.messages[0];
+        
+        // Extract sender ID (might be object or string)
+        const senderId = typeof lastMessage.senderId === 'object' 
+          ? lastMessage.senderId?._id 
+          : lastMessage.senderId;
+        
+        const recipientId = typeof lastMessage.recipientId === 'object'
+          ? lastMessage.recipientId?._id
+          : lastMessage.recipientId;
+        
+        // Get the other participant ID (not current user)
+        const currentUserId = user?.user?._id?.toString();
+        const otherUserId = senderId?.toString() === currentUserId 
+          ? recipientId 
+          : senderId;
+        
+        if (!otherUserId) {
+          console.error("Could not determine other user ID");
+          return;
+        }
+        
+        // Fetch the full conversation with participants
+        const convResponse = await api.get(`/conversations/${otherUserId}`);
+        if (convResponse.data && convResponse.data.conversation) {
+          const newConversation = convResponse.data.conversation;
+          
+          setConversations((prev) => {
+            // Check if conversation already exists (avoid duplicates)
+            const exists = prev.some(c => c._id?.toString() === conversationId.toString());
+            if (exists) return prev;
+            
+            // Add new conversation to the top of the list
+            return [newConversation, ...prev];
+          });
+          
+          // Show notification for new conversation
+          const otherUser = newConversation.participants?.find(
+            p => p._id?.toString() !== currentUserId
+          );
+          if (otherUser) {
+            toast.success(`New message from ${otherUser.username}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching conversation details:", error);
+    }
+  }, [user]);
 
   // Handle message delivered event
   const handleMessageDelivered = useCallback(({ messageId, deliveredAt }) => {
@@ -225,6 +311,23 @@ export const SocketProvider = ({ children }) => {
           setMessages(messagesResponse.data.messages);
         }
         
+        // Always add conversation to list (even if empty - it will get messages soon)
+        setConversations((prev) => {
+          const convId = response.data.conversation._id?.toString();
+          const existingIndex = prev.findIndex(c => c._id?.toString() === convId);
+          
+          if (existingIndex !== -1) {
+            // Update existing conversation and move to top
+            const updated = [...prev];
+            const updatedConv = response.data.conversation;
+            updated.splice(existingIndex, 1);
+            return [updatedConv, ...updated];
+          }
+          
+          // Add new conversation to the top
+          return [response.data.conversation, ...prev];
+        });
+        
         return response.data.conversation;
       }
     } catch (error) {
@@ -238,8 +341,10 @@ export const SocketProvider = ({ children }) => {
   // Load more messages for pagination
   const loadMoreMessages = async (conversationId, before) => {
     try {
+      // Convert to Date object if it's a string
+      const beforeDate = before instanceof Date ? before : new Date(before);
       const response = await api.get(
-        `/conversations/${conversationId}/messages?limit=50&before=${before.toISOString()}`
+        `/conversations/${conversationId}/messages?limit=50&before=${beforeDate.toISOString()}`
       );
       if (response.data && response.data.messages) {
         setMessages((prev) => [...response.data.messages, ...prev]);
@@ -263,7 +368,7 @@ export const SocketProvider = ({ children }) => {
       setConversations((prev) =>
         prev.map((conv) =>
           conv._id === conversationId
-            ? { ...conv, unreadCount: { ...conv.unreadCount, [user?._id]: 0 } }
+            ? { ...conv, unreadCount: { ...conv.unreadCount, [user?.user?._id]: 0 } }
             : conv
         )
       );
@@ -274,33 +379,90 @@ export const SocketProvider = ({ children }) => {
 
   // Send message to recipient
   const sendMessage = async (recipientId, text) => {
-    console.log("📤 Sending message:", { recipientId, text, conversationId: activeConversation?._id });
-    
     if (!socket || !connected) {
-      console.error("❌ Socket not connected");
       toast.error("You're not connected. Please check your internet connection and try again.");
       return false;
     }
 
     return new Promise((resolve, reject) => {
+      // Set timeout for message send
+      const timeout = setTimeout(() => {
+        reject(new Error("Message send timeout. Please try again."));
+      }, 10000); // 10 second timeout
+
       socket.emit(
         "message:send",
         { recipientId, text, conversationId: activeConversation?._id },
         (ack) => {
-          console.log("📬 Message acknowledgment:", ack);
+          clearTimeout(timeout);
           
           if (ack && ack.success) {
-            console.log("✅ Message sent successfully");
             // Add message to local state
             if (ack.message) {
-              console.log("Adding message to local state:", ack.message);
-              setMessages((prev) => [...prev, ack.message]);
+              setMessages((prev) => {
+                // Check for duplicates before adding
+                const exists = prev.some(m => m._id === ack.message._id);
+                if (exists) {
+                  return prev;
+                }
+                return [...prev, ack.message];
+              });
+              
+              // Update activeConversation with the conversation ID if it was just created
+              if (activeConversation && !activeConversation._id && ack.message.conversationId) {
+                setActiveConversation({
+                  ...activeConversation,
+                  _id: ack.message.conversationId,
+                });
+              }
+              
+              // Add or update conversation in list after message is sent
+              const conversationId = ack.message.conversationId;
+              
+              // Update activeConversation with the conversation ID if it was just created
+              if (activeConversation && !activeConversation._id && conversationId) {
+                setActiveConversation(prev => ({
+                  ...prev,
+                  _id: conversationId,
+                }));
+              }
+              
+              // Update conversations list
+              if (activeConversation) {
+                const convId = conversationId || activeConversation._id;
+                
+                setConversations((prev) => {
+                  const existingIndex = prev.findIndex(c => c._id?.toString() === convId?.toString());
+                  
+                  // Create updated conversation object
+                  const updatedConv = {
+                    ...activeConversation,
+                    _id: convId,
+                    lastMessage: {
+                      text: ack.message.text,
+                      senderId: ack.message.senderId,
+                      createdAt: ack.message.createdAt,
+                    },
+                    updatedAt: ack.message.createdAt,
+                  };
+                  
+                  if (existingIndex === -1) {
+                    // Add new conversation to the top
+                    return [updatedConv, ...prev];
+                  }
+                  
+                  // Update existing conversation and move to top
+                  const updated = [...prev];
+                  updated.splice(existingIndex, 1);
+                  return [updatedConv, ...updated];
+                });
+              }
             }
             resolve(true);
           } else {
-            console.error("❌ Message send failed:", ack);
-            // Handle message send failure with retry option
+            // Handle message send failure
             const errorMessage = ack?.error || "Message couldn't be sent. Please try again.";
+            toast.error(errorMessage);
             reject(new Error(errorMessage));
           }
         }
@@ -362,7 +524,16 @@ export const SocketProvider = ({ children }) => {
         try {
           const response = await api.get("/conversations");
           if (response.data && response.data.conversations) {
-            setConversations(response.data.conversations);
+            // Deduplicate conversations by ID
+            const uniqueConversations = response.data.conversations.reduce((acc, conv) => {
+              const convId = conv._id?.toString();
+              if (!acc.some(c => c._id?.toString() === convId)) {
+                acc.push(conv);
+              }
+              return acc;
+            }, []);
+            
+            setConversations(uniqueConversations);
           }
         } catch (error) {
           console.error("Error loading conversations:", error);

@@ -1,4 +1,4 @@
-import { Plus, Trash, Image, Loader2 } from "lucide-react";
+import { Plus, Trash, Image, Loader2, Zap, TrendingUp, Clock, Filter, XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import api from "../../lib/api";
 import toast from "react-hot-toast";
@@ -6,6 +6,9 @@ import { useAuth } from "../../context/AuthContext";
 import SkeletonLoaders from "../../components/SkeletonLoaders";
 import ProductCard from "../../components/ui/ProductCard";
 import AdCard from "../../components/ui/AdCard";
+import BoostAdModal from "../../components/BoostAdModal";
+import BoostCountdown from "../../components/BoostCountdown";
+import BoostStatusBadge from "../../components/BoostStatusBadge";
 import { useLocation } from "react-router-dom";
 
 const UserAdsPage = () => {
@@ -13,6 +16,8 @@ const UserAdsPage = () => {
   const author = user?.user?._id;
   const [myads, setMyAds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showBoostModal, setShowBoostModal] = useState(false);
+  const [filter, setFilter] = useState("all"); // "all", "boosted", "pending", "regular"
   // server url
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -25,20 +30,69 @@ const UserAdsPage = () => {
     const params = new URLSearchParams(location.search);
     if (params.get("post") === "true") {
       document.getElementById("my_modal_3").showModal();
-
       // Optional: Clean URL after opening (removes ?post=true)
       window.history.replaceState({}, "", "/profile/ads");
     }
+    if (params.get("boost") === "success") {
+      const reference = params.get("reference");
+      if (reference) {
+        // Verify boost payment
+        verifyBoostPayment(reference);
+      } else {
+        toast.success("Boost payment successful! Your ad is now featured.");
+        getUserAds(); // Refresh ads to show boost status
+      }
+      // Clean URL
+      window.history.replaceState({}, "", "/profile/ads");
+    }
   }, [location]);
+
+  // Verify boost payment
+  const verifyBoostPayment = async (reference) => {
+    try {
+      const response = await api.get(`/boost/verify/${reference}`);
+      if (response.data.success) {
+        toast.success("Boost payment verified! Your ad is now featured.");
+        getUserAds(); // Refresh ads to show boost status
+      } else {
+        toast.error("Failed to verify boost payment");
+        getUserAds(); // Still refresh to show current status
+      }
+    } catch (error) {
+      console.error("Error verifying boost payment:", error);
+      toast.error("Failed to verify boost payment");
+      getUserAds(); // Still refresh to show current status
+    }
+  };
 
   // get my ads
   const getUserAds = async () => {
     try {
       const response = await api.get(`/ad/getadsbyauthor/${author}`);
       const data = response.data;
-      setMyAds(data);
+      
+      // Check boost status for each ad
+      const adsWithBoostStatus = await Promise.all(
+        data.map(async (ad) => {
+          try {
+            const boostResponse = await api.get(`/boost/check/${ad._id}`);
+            const boostData = boostResponse.data.data.boost;
+            return {
+              ...ad,
+              isBoosted: boostResponse.data.data.isBoosted,
+              boostEndDate: boostResponse.data.data.boostEndDate,
+              boostStatus: boostData?.status || null,
+              approvalStatus: boostData?.approvalStatus || null,
+            };
+          } catch (error) {
+            return { ...ad, isBoosted: false };
+          }
+        })
+      );
+      
+      setMyAds(adsWithBoostStatus);
       setLoading(false);
-      console.log("my ads", data);
+      console.log("my ads with boost status", adsWithBoostStatus);
     } catch (error) {
       console.log("error", error);
       toast.error("error getting ads");
@@ -216,9 +270,38 @@ const UserAdsPage = () => {
       <div className="w-full p-6 flex-row flex justify-between items-center">
         <div>
           <h2 className="text-lg tracking-wider text-neutral-500">User Ads</h2>
+          {myads.length > 0 && (
+            <div className="flex gap-4 mt-2 text-sm text-gray-600">
+              <span>Total: {myads.length}</span>
+              <span>Boosted: {myads.filter(ad => ad.boostStatus === "active").length}</span>
+              <span>Pending: {myads.filter(ad => ad.boostStatus === "pending").length}</span>
+            </div>
+          )}
         </div>
-        <div>
-          {/* You can open the modal using document.getElementById('ID').showModal() method */}
+        <div className="flex gap-3 flex-wrap">
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="bg-gray-100 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 pr-8"
+            >
+              <option value="all">All Ads</option>
+              <option value="boosted">Active Boosts</option>
+              <option value="pending">Pending Approval</option>
+              <option value="regular">Regular Ads</option>
+            </select>
+          </div>
+          
+          <button
+            className="btn bg-green-500 hover:bg-green-600 rounded-md p-2 text-white text-xs flex flex-row items-center gap-1"
+            onClick={() => setShowBoostModal(true)}
+            disabled={myads.length === 0}
+          >
+            <Zap color="white" size={20} />
+            Boost Ad
+          </button>
+          
           <button
             className="btn bg-orange-500 rounded-md p-2 text-white text-xs flex flex-row items-center gap-1"
             onClick={() => document.getElementById("my_modal_3").showModal()}
@@ -430,16 +513,75 @@ const UserAdsPage = () => {
           </div>
         ) : (
           <div className="grid p-4 md:grid-cols-3 grid-cols-2 lg:grid-cols-3 md:gap-4 gap-2 justify-center">
-            {myads.slice(0, 9).map((ad) => (
-              <AdCard
-                path={`/product/${ad._id}`}
-                state={ad}
-                key={ad._id}
-                product={ad}
-              />
-            ))}
+            {myads
+              .filter((ad) => {
+                switch (filter) {
+                  case "boosted":
+                    return ad.boostStatus === "active";
+                  case "pending":
+                    return ad.boostStatus === "pending";
+                  case "regular":
+                    return !ad.boostStatus || ad.boostStatus === "none" || ad.boostStatus === "expired" || ad.boostStatus === "rejected";
+                  default:
+                    return true;
+                }
+              })
+              .slice(0, 9)
+              .map((ad) => (
+                <div key={ad._id} className="relative">
+                  {/* Boost Status Badge */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <BoostStatusBadge 
+                      status={ad.boostStatus || "none"} 
+                      className="shadow-lg"
+                    />
+                  </div>
+                  
+                  <AdCard
+                    path={`/product/${ad._id}`}
+                    state={ad}
+                    key={ad._id}
+                    product={ad}
+                  />
+                  
+                  {/* Boost Countdown */}
+                  {ad.boostStatus === "active" && ad.boostEndDate && (
+                    <div className="absolute bottom-2 left-2 right-2 z-10">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2">
+                        <BoostCountdown 
+                          endDate={ad.boostEndDate} 
+                          status={ad.boostStatus}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Boost Status Info */}
+                  {(ad.boostStatus === "pending" || ad.boostStatus === "rejected") && (
+                    <div className="absolute bottom-2 left-2 right-2 z-10">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-600">
+                          {ad.boostStatus === "pending" && "Awaiting admin approval"}
+                          {ad.boostStatus === "rejected" && "Boost request rejected"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
           </div>
         )}
+        
+        {/* Boost Modal */}
+        <BoostAdModal
+          isOpen={showBoostModal}
+          onClose={() => setShowBoostModal(false)}
+          userAds={myads}
+          onBoostSuccess={() => {
+            getUserAds();
+            setShowBoostModal(false);
+          }}
+        />
       </div>
     </div>
   );

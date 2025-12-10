@@ -11,6 +11,7 @@ import CallToAction from "../components/CallToAction";
 import Faq from "../components/Faq";
 import Brands from "../components/Brands";
 import SearchArea from "../components/SearchArea";
+import FeaturedAdsSection from "../components/FeaturedAdsSection";
 
 const HomePage = () => {
   return (
@@ -59,18 +60,9 @@ const HomePage = () => {
           <div className="w-full py-6 sm:py-10">
             <RecommendedProducts />
           </div>
-          {/* <div className="w-full py-6 md:py-10">
-            <div className="w-full flex flex-row justify-between items-center md:px-6">
-              <h2 className="text-2xl font-bold">Featured Ads</h2>
-              <a
-                href={`/marketplace`}
-                className="text-sm font-semibold text-neutral-500"
-              >
-                See All
-              </a>
-            </div>
-            <FeaturedSection />
-          </div> */}
+          
+          {/* Featured/Boosted Ads Section */}
+          <FeaturedAdsSection />
           <div className="w-full py-6 sm:py-10">
             <Brands />
           </div>

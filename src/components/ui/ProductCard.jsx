@@ -1,84 +1,103 @@
-import { ShoppingCartIcon } from "lucide-react";
+import { Heart } from "lucide-react";
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useWishlist } from "../../context/WishlistContext";
+import toast from "react-hot-toast";
 
-const ProductCard = ({ product, path, state }) => {
+const ProductCard = ({ product }) => {
+  const { user } = useAuth();
+  const { isInWishlist, toggleWishlist, operationLoading } = useWishlist();
+  const navigate = useNavigate();
+  const url = import.meta.env.VITE_WS_URL;
+
+  const inWishlist = isInWishlist(product?._id);
+
+  // Toggle wishlist
+  const handleWishlistToggle = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error("Please login to add to wishlist");
+      navigate("/auth/signin");
+      return;
+    }
+
+    await toggleWishlist(product._id);
+  };
+
+  const handleProductClick = () => {
+    navigate(`/product/${product._id}`);
+  };
+
   return (
-    // <Link
-    //   to={path}
-    //   // pass product to next page
-    //   state={state}
-    //   className="w-full md:h-96 h-64 rounded-xl bg-white border border-neutral-100"
-    // >
-    //   <div className="h-[70%] bg-white rounded-t-xl">
-    //     <img
-    //       src={product?.image}
-    //       alt=""
-    //       className="w-full h-full rounded-xl object-fit"
-    //     />
-    //   </div>
-    //   <div className="h-[30%] bg-white rounded-b-xl p-2">
-    //     <p className="md:text-lg text-md">{product?.name}</p>
-    //   </div>
-    // </Link>
-    <Link
-      to={path}
-      // pass product to next page
-      state={state}
-      class="relative m-10 w-full w-72 shrink-0 overflow-hidden rounded-lg bg-white shadow-md"
+    <div
+      onClick={handleProductClick}
+      className="relative w-full shrink-0 overflow-hidden rounded-lg bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
     >
-      <a href="#">
-        <img
-          class="h-60 rounded-t-lg object-cover"
-          src={product?.image}
-          alt="product image"
+      {/* Wishlist Button */}
+      <button
+        onClick={handleWishlistToggle}
+        disabled={operationLoading}
+        className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all duration-200 shadow-md disabled:opacity-50"
+      >
+        <Heart
+          className={`w-5 h-5 transition-all duration-200 ${
+            inWishlist
+              ? "fill-red-500 text-red-500"
+              : "text-gray-600 hover:text-red-500"
+          }`}
         />
-      </a>
-      <span class="absolute top-0 left-0 w-28 translate-y-4 -translate-x-6 -rotate-45 bg-black text-center text-sm text-white">
-        Sale
-      </span>
-      <div class="mt-4 px-5 pb-5">
-        <a href="#">
-          <h5 class="text-xl font-semibold tracking-tight text-slate-900">
-            Nike Air MX Super 5000
-          </h5>
-        </a>
-        <div class="mt-2.5 mb-5 flex items-center justify-between">
-          <div class="flex items-center">
-            <span class="mr-2 rounded bg-yellow-200 px-2.5 py-0.5 text-xs font-semibold">
-              5.0
-            </span>
-            <svg
-              aria-hidden="true"
-              class="h-5 w-5 text-yellow-300"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-            </svg>
+      </button>
+
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden bg-gray-100">
+        {product?.images && product.images.length > 0 ? (
+          <img
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            src={`${url}/${product.images[0]}`}
+            alt={product.title || "Product"}
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <Heart size={48} />
           </div>
-          <p>
-            <span class="text-xl font-bold text-slate-900">$249</span>
-          </p>
-        </div>
-        <div class="flex items-center justify-between space-x-4 h-10">
-          <a
-            href="#"
-            class="flex space-x-2 items-center rounded-full bg-white justify-center h-full border border-slate-900  px-2 w-full py-2.5 text-center text-sm font-medium text-slate-900 hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-blue-300"
-          >
-            {/* <ShoppingCartIcon color="black" size={20} /> */}
-            Add to cart
-          </a>
-          <a
-            href="#"
-            class="flex w-full space-x-2 items-center justify-center rounded-full bg-slate-900 px-2 py-2.5 text-center text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
-          >
-            Buy Now
-          </a>
-        </div>
+        )}
       </div>
-    </Link>
+
+      {/* Content */}
+      <div className="p-4">
+        <h5 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[40px]">
+          {product?.title || "Product Title"}
+        </h5>
+
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-orange-600">
+              ${product?.price?.toLocaleString() || "0"}
+            </span>
+            {product?.category?.name && (
+              <span className="text-xs text-gray-500">{product.category.name}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleProductClick();
+          }}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-full text-sm font-medium transition-colors"
+        >
+          View Details
+        </button>
+      </div>
+    </div>
   );
 };
 

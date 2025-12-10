@@ -12,26 +12,41 @@ import ResetPasswordPage from "./pages/auth/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./context/AuthContext";
+import { useMaintenance } from "./context/MaintenanceContext";
 import LoadingPage from "./components/LoadingPage";
+import { MaintenancePage } from "./pages/MaintenancePage";
 import ProfilePage from "./pages/ProfilePage";
 import SellerCatalogue from "./pages/SellerCatalogue";
 import ChatPage from "./pages/ChatPage";
 import SignInPage from "./pages/auth/SignInPage";
 import SearchPage from "./pages/SearchPage";
+import { SupportChatButton } from "./components/SupportChatButton";
+import BoostRatesPage from "./pages/BoostRatesPage";
 
 function App() {
   // add loading page before rendering a page
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
+  const { maintenanceMode, maintenanceMessage, loading: maintenanceLoading } = useMaintenance();
+
+  // Show loading while checking maintenance status
+  if (maintenanceLoading || loading) {
+    return <LoadingPage />;
+  }
+
+  // Show maintenance page if enabled
+  if (maintenanceMode) {
+    return <MaintenancePage message={maintenanceMessage} />;
+  }
+
   return (
     <>
       <ScrollToTop />
       <Toaster position="top-right" />
-      {loading ? (
-        <LoadingPage />
-      ) : (
+      {(
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/boost-rates" element={<BoostRatesPage />} />
 
           {/* Protected Routes */}
           <Route
@@ -51,7 +66,7 @@ function App() {
             }
           />
           <Route
-            path="/shop/:name"
+            path="/shop/:id"
             element={
               <ProtectedRoute>
                 <SellerCatalogue />
@@ -98,6 +113,9 @@ function App() {
           <Route path="*" element={<HomePage />} />
         </Routes>
       )}
+      
+      {/* Support Chat Button - Only show when authenticated */}
+      {isAuthenticated && <SupportChatButton />}
     </>
   );
 }

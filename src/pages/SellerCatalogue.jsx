@@ -1,39 +1,63 @@
 import React, { useEffect, useState } from "react";
 import AppLayout from "../layout/AppLayout";
-import { Grid3X3, Grip, ListFilterPlus, SquareMenu } from "lucide-react";
+import { Grid3X3, Grip, ListFilterPlus, SquareMenu, Star } from "lucide-react";
 import { Dropdown } from "../components/ui/DropDown";
 import { selloptions } from "../constants";
 import { useAuth } from "../context/AuthContext";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../lib/api";
 import SkeletonLoaders from "../components/SkeletonLoaders";
 import AdCard from "../components/ui/AdCard";
+import { SellerReviews } from "../components/SellerReviews";
 
 const SellerCatalogue = () => {
-  const location = useLocation();
-  const author = location.state || {};
-  console.log("user here", author);
+  const { id } = useParams(); // Get seller ID from URL
+  const navigate = useNavigate();
+  const [seller, setSeller] = useState(null);
   const [userads, setUserads] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
 
-  //   get ads based on current user
+  // Fetch seller info and ads
   useEffect(() => {
-    getAds();
-  }, [author._id]);
+    if (id) {
+      fetchSellerData();
+      getAds();
+      fetchReviews();
+    }
+  }, [id]);
+
+  const fetchSellerData = async () => {
+    try {
+      const response = await api.get(`/auth/user/${id}`);
+      setSeller(response.data.user || response.data);
+    } catch (error) {
+      console.error("Error fetching seller:", error);
+      toast.error("Failed to load seller information");
+      navigate("/");
+    }
+  };
 
   const getAds = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/ad/getadsbyauthor/${author._id}`);
-      const data = response.data;
-      setUserads(data);
-      console.log("ad", data);
-      setLoading(false);
+      const response = await api.get(`/ad/getadsbyauthor/${id}`);
+      setUserads(response.data);
     } catch (error) {
-      console.log("error", error);
+      console.error("Error fetching ads:", error);
+      toast.error("Error getting seller ads");
+    } finally {
       setLoading(false);
-      toast.error("error getting this users ads");
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const response = await api.get(`/reviews/seller/${id}`);
+      setReviews(response.data.reviews || []);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
     }
   };
   return (
@@ -47,16 +71,27 @@ const SellerCatalogue = () => {
                   <div className="w-full h-full p-0.5 bg-white rounded-full">
                     <div className="bg-orange-500 flex flex-row items-center justify-center h-full w-full rounded-full">
                       <p className="text-white text-2xl font-semibold">
-                        {author?.username?.slice(0, 1)}
+                        {seller?.username?.slice(0, 1) || "S"}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="w-full flex flex-col space-y-2">
-                <p className="text-xl font-semibold">{author?.username}</p>
+                <p className="text-xl font-semibold">{seller?.username}</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="ml-1 text-sm font-medium">
+                      {seller?.sellerRating?.average?.toFixed(1) || "0.0"}
+                    </span>
+                    <span className="ml-1 text-xs text-gray-500">
+                      ({seller?.sellerRating?.count || 0} reviews)
+                    </span>
+                  </div>
+                </div>
                 <p className="text-md text-neutral-500 font-normal">
-                  {author?.phone || "null"}
+                  {seller?.phone || "No phone"}
                 </p>
               </div>
               <div className="w-full flex flex-row items-center space-x-3">
@@ -64,8 +99,8 @@ const SellerCatalogue = () => {
                   Follow
                 </button>
                 <Link
-                  to={`/chat/${author._id}`}
-                  state={author}
+                  to="/chats"
+                  state={{ author: seller }}
                   className="text-neutral-500"
                 >
                   Message
@@ -92,9 +127,13 @@ const SellerCatalogue = () => {
           </div>
         </div>
 
-        {/* products here */}
-
+        {/* Seller Reviews */}
         <div className="max-w-7xl sm:px-6 mx-auto">
+          {seller && <SellerReviews sellerId={id} />}
+        </div>
+
+        {/* products here */}
+        <div className="max-w-7xl sm:px-6 mx-auto mt-6">
           {loading ? (
             <SkeletonLoaders />
           ) : userads.length === 0 ? (
@@ -116,6 +155,13 @@ const SellerCatalogue = () => {
                   product={ad}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Seller Reviews */}
+          {seller && (
+            <div className="mt-8">
+              <SellerReviews sellerId={seller._id} />
             </div>
           )}
         </div>

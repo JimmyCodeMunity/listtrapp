@@ -1,31 +1,39 @@
 import {
-  Bell,
-  ChevronDown,
   Cog,
-  MapPin,
-  MessageCircle,
   Search,
-  ShoppingBag,
+  Heart,
+  User2Icon,
 } from "lucide-react";
-import React, { useContext, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dropdown } from "./ui/DropDown";
 import { helpoptions, selloptions } from "../constants";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useWishlist } from "../context/WishlistContext";
 import { CategoryDropDown } from "./ui/CategoryDropDown";
-import { Button } from "./ui/Button";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { MessagesDropdown } from "./MessagesDropdown";
+import { WishlistDrawer } from "./WishlistDrawer";
 
 const Navbar = () => {
-  const [selectedFilter, setSelectedFilter] = useState("Categories");
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const navigate = useNavigate();
   const { user, categories } = useAuth();
+  const { wishlistCount } = useWishlist();
 
   const handleCategorySelect = (value) => {
     console.log("catv", value);
     navigate(`/marketplace?category=${value}`);
-    setSelectedFilter(value);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   // Control visibility based on scroll direction and position
@@ -53,81 +61,88 @@ const Navbar = () => {
 
   return (
     <div
-      className={`w-full max-w-7xl mx-auto md:px-6 px-4 bg-white py-5 sticky top-0 z-50 transition-all duration-300`}
+      className={`w-full max-w-7xl mx-auto md:px-6 px-4 bg-white py-4 sticky top-0 z-50 transition-all duration-300 shadow-sm`}
     >
       {/* Main Navbar Row */}
-      <div className="w-full flex flex-col gap-4">
+      <div className="w-full flex flex-col gap-3">
         {/* Top Row: Logo, Search, Icons */}
-        <div className="w-full flex flex-row items-center justify-between">
-          <div>
-            <Link to="/" className="text-2xl font-bold tracking-wider">
+        <div className="w-full flex flex-row items-center justify-between gap-4">
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-2xl font-bold tracking-wider text-gray-900 hover:text-orange-500 transition-colors">
               Littr
             </Link>
           </div>
 
           {/* Desktop Search Bar - Smooth Hide */}
-          <Link
-            to="/search"
-            className={`w-[60%] text-xs transition-all duration-500 ease-in-out transform ${
+          <form
+            onSubmit={handleSearch}
+            className={`flex-1 max-w-2xl text-xs transition-all duration-500 ease-in-out transform ${
               isSearchVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-4 h-0"
+                && "opacity-100 translate-y-0"
             } overflow-hidden md:block hidden`}
           >
-            <div className="w-full h-8 border border-neutral-200 rounded-full flex flex-row items-center justify-between">
-              <div className="flex flex-row items-center">
-                <div className="border border-l-0 border-t-0 border-b-0 border-neutral-300 h-full px-4 flex flex-row items-center space-x-2">
-                  <Search color="gray" size={20} />
-                </div>
+            <div className="w-full h-10 border border-gray-300 rounded-full flex flex-row items-center justify-between bg-gray-50 hover:bg-white hover:border-orange-400 transition-all focus-within:bg-white focus-within:border-orange-500 focus-within:shadow-md">
+              <div className="flex flex-row items-center pl-4">
+                <Search className="text-gray-400" size={18} />
               </div>
-              <div className="w-full">
+              <div className="flex-1">
                 <input
                   type="text"
-                  placeholder="Asus"
-                  className="h-14 w-full px-4 bg-transparent border-0 focus:outline-none"
+                  placeholder="Search for products, brands and more..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-10 w-full px-4 bg-transparent border-0 focus:outline-none text-sm"
                 />
               </div>
-              <div>
-                <button className="bg-orange-500 h-8 w-32 rounded-full text-white">
+              <div className="pr-1">
+                <button 
+                  type="submit"
+                  className="bg-orange-500 hover:bg-orange-600 h-8 px-6 rounded-full text-white font-medium transition-colors"
+                >
                   Search
                 </button>
               </div>
             </div>
-          </Link>
+          </form>
 
-          {/* Cart & Icons */}
-          <div className="flex flex-row items-center md:space-x-4 space-x-2 text-xs">
-            <div className="flex flex-row items-center space-x-2 border border-l-0 border-t-0 border-b-0 border-neutral-200 md:px-4">
-              <div className="space-x-3 flex items-center">
-                <div className="relative cursor-pointer">
-                  <ShoppingBag color="grey" size={15} />
-                  <button className="absolute -top-2 -right-3 text-xs text-white bg-orange-500 w-[18px] h-[18px] rounded-full">
-                    3
-                  </button>
-                </div>
-                <p className="text-xs">Cart</p>
-              </div>
-              <Link to="/chats" className="flex items-center space-x-1">
-                <MessageCircle color="grey" size={15} />
-                <p className="text-xs">Messages</p>
-              </Link>
-              <Bell color="grey" size={15} />
-              <p className="text-xs">Notifications</p>
+          {/* Wishlist & Icons */}
+          <div className="flex flex-row items-center md:gap-1 gap-1 text-xs flex-shrink-0">
+            <div className="flex flex-row items-center gap-1 border-l border-gray-200 pl-3">
+              {user && (
+                <button
+                  onClick={() => setIsWishlistOpen(true)}
+                  className="flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
+                >
+                  <div className="relative">
+                    <Heart className="text-gray-600" size={18} />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 text-xs text-white bg-orange-500 w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
+                        {wishlistCount > 9 ? "9+" : wishlistCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-gray-700 hidden md:block">Wishlist</p>
+                </button>
+              )}
+              
+              {user && <MessagesDropdown />}
+              {user && <NotificationDropdown />}
+              
               {user ? (
                 <Link
                   to="/profile/userinfo"
-                  className="flex flex-row items-center space-x-2"
+                  className="flex flex-row items-center gap-2 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors"
                 >
-                  <Cog color="grey" size={15} />
-                  <p className="text-xs">Account</p>
+                  <User2Icon className="text-gray-600" size={18} />
+                  <p className="text-xs font-medium text-gray-700 hidden md:block">Hi, {user?.user?.username}</p>
                 </Link>
               ) : (
                 <Link
                   to="/auth/signin"
-                  className="flex flex-row items-center space-x-2"
+                  className="flex flex-row items-center gap-2 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors"
                 >
-                  <Cog color="grey" size={15} />
-                  <p className="text-xs">Account</p>
+                  <Cog className="text-gray-600" size={18} />
+                  <p className="text-xs font-medium text-gray-700">Account</p>
                 </Link>
               )}
             </div>
@@ -135,54 +150,60 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Search Bar - Also hides on scroll */}
-        <div
-          className={`px-0 w-full my-4 block md:hidden h-6 border border-neutral-200 rounded-full flex flex-row items-center justify-between transition-all duration-200 ease-in-out transform ${
+        <form
+          onSubmit={handleSearch}
+          className={`px-0 w-full block md:hidden h-9 border border-gray-300 rounded-full flex flex-row items-center justify-between transition-all duration-200 ease-in-out transform bg-gray-50 ${
             isSearchVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-4 h-0"
           } overflow-hidden`}
         >
-          <div className="flex flex-row items-center">
-            <div className="border border-l-0 border-t-0 border-b-0 border-neutral-300 h-full px-4 flex flex-row items-center space-x-2">
-              <CategoryDropDown
-                label="Categories"
-                options={categories}
-                onSelect={handleCategorySelect}
-              />
-            </div>
+          <div className="flex flex-row items-center pl-3">
+            <Search className="text-gray-400" size={16} />
           </div>
-          <div className="w-full">
+          <div className="flex-1">
             <input
               type="text"
-              placeholder="Asus"
-              className="h-6 w-full px-4 bg-transparent border-0 focus:outline-none"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 w-full px-3 bg-transparent border-0 focus:outline-none text-sm"
             />
           </div>
-          <div>
-            <button className="bg-orange-500 h-6 w-24 rounded-full text-white">
+          <div className="pr-1">
+            <button 
+              type="submit"
+              className="bg-orange-500 h-7 px-4 rounded-full text-white text-xs font-medium"
+            >
               Search
             </button>
           </div>
-        </div>
+        </form>
 
         {/* Mini Nav - Always visible */}
-        <div className="w-full flex flex-row justify-between items-center">
-          <div className="w-full text-xs flex flex-row md:justify-start justify-center border border-neutral-200 border-b-0 border-r-0 border-l-0 py-4">
-            <div className="border border-l-0 border-b-0 border-t-0 border-neutral-400 px-5">
+        <div className="w-full flex flex-row justify-between items-center border-t border-gray-200 pt-3">
+          <div className="flex flex-row md:justify-start justify-center gap-1 text-xs">
+            <div className="px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <CategoryDropDown
                 label="Categories"
                 options={categories}
                 onSelect={handleCategorySelect}
               />
             </div>
-            <div className="border border-l-0 border-b-0 border-t-0 border-neutral-400 px-5">
+            <div className="px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <Dropdown
                 label="Sell on Littr"
                 options={selloptions}
                 onSelect={(value) => console.log(value)}
               />
             </div>
-            <div className="border md:block hidden border-l-0 border-b-0 border-t-0 border-neutral-400 px-5">
+            <Link 
+              to="/boost-rates"
+              className="md:block hidden px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 hover:text-orange-600"
+            >
+              Boost Ads
+            </Link>
+            <div className="md:block hidden px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <Dropdown
                 label="Help"
                 options={helpoptions}
@@ -190,16 +211,19 @@ const Navbar = () => {
               />
             </div>
           </div>
-          <div className="w-full flex flex-row justify-end">
+          <div className="flex flex-row justify-end">
             <button
               onClick={() => navigate("/profile/ads?post=true")}
-              className="bg-orange-500 rounded-full py-2 px-4 text-white text-xs"
+              className="bg-orange-500 hover:bg-orange-600 rounded-full py-2 px-5 text-white text-xs font-medium transition-colors shadow-sm hover:shadow-md"
             >
               Post Ad
             </button>
           </div>
         </div>
       </div>
+
+      {/* Wishlist Drawer */}
+      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
     </div>
   );
 };

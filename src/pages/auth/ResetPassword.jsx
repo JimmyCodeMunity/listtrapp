@@ -1,127 +1,175 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useState } from "react";
 import AuthContext from "../../context/AuthContext";
-import Swal from "sweetalert2";
-import { useNavigate, useParams } from "react-router-dom";
-import Loader from "../../components/ui/Loader";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Label } from "../../components/ui/Label";
+import { Eye, EyeOff, Loader2, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 const ResetPasswordPage = () => {
   const { handleSubmit } = useContext(AuthContext);
-
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const { token } = useParams();
 
   const handlePassReset = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    // confirm password match
-    if (password !== confirmPassword) {
-      Swal.fire({
-        icon: "error",
-        title: "Error...",
-        text: "Passwords do not match",
-        draggable: true,
-      });
-      setLoading(false);
+    if (!password || !confirmPassword) {
+      toast.error("Please fill in all fields");
       return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    const body = { password };
+    const { status, data } = await handleSubmit(`/reset-password/${token}`, body);
+
+    setLoading(false);
+    if (status === 200) {
+      toast.success("Password reset successfully!");
+      setTimeout(() => navigate("/auth/signin"), 2000);
     } else {
-      const body = {
-        password: password,
-      };
-      const { status, data } = await handleSubmit(
-        `/reset-password/${token}`,
-        body
-      );
-      console.log("status", status);
-      setLoading(false);
-      if (status === 200) {
-        Swal.fire({
-          icon: "success",
-          title: "Success...",
-          text: "Password reset successfully",
-          draggable: true,
-        });
-        navigate("/auth/signin");
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error...",
-          text: data?.message,
-          draggable: true,
-        });
-      }
+      toast.error(data?.message || "Failed to reset password");
     }
   };
+
   return (
-    <div className="w-full">
-      <section class="flex justify-center relative">
-        <div className="w-full h-full object-cover fixed bg-neutral-100">
-          <div class="mx-auto max-w-lg px-6 lg:px-8 py-20">
-            <div class="rounded-2xl bg-white shadow-xl">
-              <form
-                action=""
-                class="lg:p-11 p-7 mx-auto"
-                onSubmit={handlePassReset}
-              >
-                <div class="mb-11">
-                  <h1 class="text-gray-900 text-start font-manrope text-2xl font-bold leading-10 mb-2">
-                    Password reset
-                  </h1>
-                  <p class="text-gray-500 text-start text-base font-medium leading-6">
-                    Enter new password and reset
-                  </p>
-                </div>
-                <input
-                  type="password"
-                  class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-6"
-                  placeholder="Enter new password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <input
-                  type="password"
-                  class="w-full h-12 text-gray-900 placeholder:text-gray-400 text-lg font-normal leading-7 rounded-full border-gray-300 border shadow-sm focus:outline-none px-4 mb-6"
-                  placeholder="Confirm password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 p-4">
+      <div className="w-full max-w-md">
+        <Link
+          to="/auth/signin"
+          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-orange-500 mb-6 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back to sign in
+        </Link>
 
-                {/* loading */}
-                {loading ? (
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl font-bold text-center">
+              Reset Password
+            </CardTitle>
+            <CardDescription className="text-center">
+              Enter your new password below
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePassReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">New Password</Label>
+                <div className="relative">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
+                    size={18}
+                  />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                    required
+                  />
                   <button
-                    disabled
-                    class="w-full h-12 flex flex-row items-center justify-center text-white text-center text-base font-semibold leading-6 rounded-full hover:bg-gray-800 transition-all duration-700 bg-black shadow-sm mb-11"
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                   >
-                    <Loader />
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
-                ) : (
-                  <button class="w-full h-12 text-white text-center text-base font-semibold leading-6 rounded-full hover:bg-indigo-800 transition-all duration-700 bg-black shadow-sm mb-11">
-                    Submit
-                  </button>
-                )}
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Must be at least 6 characters
+                </p>
+              </div>
 
-                <a
-                  href="/auth/signin"
-                  class="flex justify-center text-gray-900 text-base font-medium leading-6"
-                >
-                  {" "}
-                  I remember my password{" "}
-                  <span class="text-orange-500 font-semibold pl-3">
-                    {" "}
-                    Sign In
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
+                    size={18}
+                  />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Resetting password...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={18} />
+                    Reset Password
+                  </>
+                )}
+              </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-neutral-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-neutral-500">
+                    Remember your password?
                   </span>
-                </a>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
+                </div>
+              </div>
+
+              <Link
+                to="/auth/signin"
+                className="w-full h-11 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold rounded-lg transition-colors flex items-center justify-center"
+              >
+                Sign In
+              </Link>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

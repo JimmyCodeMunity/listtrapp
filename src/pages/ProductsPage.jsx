@@ -31,15 +31,27 @@ const ProductsPage = () => {
 
   // MEMOIZE categoryAds to prevent unnecessary re-renders
   const categoryAds = useMemo(() => {
+    // Safety check: ensure ads is an array
+    if (!Array.isArray(ads)) {
+      console.warn("ads is not an array:", ads);
+      return [];
+    }
+    
+    // If no category is selected, show all ads
+    if (!category) {
+      return ads;
+    }
+    
+    // Filter by category if one is selected
     return ads.filter((ad) => ad?.category?.categoryname === category);
   }, [ads, category]); // Only recompute if ads or category changes
 
   // === SUGGESTIONS (safe now) ===
   useEffect(() => {
-    if (searchQuery.length >= 2) {
+    if (searchQuery.length >= 2 && Array.isArray(categoryAds)) {
       const filtered = categoryAds
         .filter((ad) =>
-          ad.title.toLowerCase().includes(searchQuery.toLowerCase())
+          ad?.title?.toLowerCase().includes(searchQuery.toLowerCase())
         )
         .slice(0, 6);
       setSuggestions(filtered);
@@ -125,7 +137,7 @@ const ProductsPage = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={`Search in ${category || "All Categories"}`}
+                  placeholder={`Search in ${category || "All Products"}`}
                   className="h-14 w-full px-4 bg-transparent border-0 focus:outline-none text-sm"
                 />
               </div>
@@ -237,7 +249,9 @@ const ProductsPage = () => {
                 <p className="text-neutral-400 text-sm mt-2 max-w-md">
                   {searchTerm
                     ? "Try different keywords or check spelling."
-                    : "This category is empty."}
+                    : category 
+                      ? "This category is empty."
+                      : "No products available at the moment."}
                 </p>
               </div>
             ) : (

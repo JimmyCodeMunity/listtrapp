@@ -346,12 +346,5 @@ export const deals = [
     textcolor: "text-black",
     image: "../images/deals/iphone1.png",
   },
-  {
-    id: 4,
-    title: "Cell Phones & Mobile Phones",
-    description: "Upto 40% off on Phones",
-    bg: "bg-lime-300",
-    textcolor: "",
-    image: "../images/deals/ipone3.png",
-  },
+  
 ];
