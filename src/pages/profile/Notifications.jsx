@@ -111,26 +111,30 @@ const Notifications = () => {
         {notifications.length > 0 && (
           <button
             onClick={markAllAsRead}
-            className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+            className="text-sm text-orange-500 hover:text-orange-600 font-semibold hover:underline transition-all duration-200 px-3 py-1 rounded-lg hover:bg-orange-50"
           >
             Mark all as read
           </button>
         )}
       </div>
 
-      <div className="w-full rounded-xl shadow-md bg-white ring-1 ring-neutral-100">
+      <div className="w-full rounded-2xl shadow-xl bg-white/80 backdrop-blur-sm ring-1 ring-white/20 relative overflow-hidden">
+        {/* Decorative background */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full -translate-y-12 translate-x-12 opacity-30"></div>
         {notifications.length === 0 ? (
-          <div className="p-12 text-center">
-            <Bell className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-            <h3 className="text-lg font-medium text-neutral-700 mb-2">
+          <div className="p-12 text-center relative z-10">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl mb-6">
+              <Bell className="h-10 w-10 text-orange-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-neutral-700 mb-2">
               No notifications yet
             </h3>
-            <p className="text-sm text-neutral-500">
+            <p className="text-neutral-500">
               When you get notifications, they'll show up here
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-neutral-100">
+          <div className="divide-y divide-neutral-100 relative z-10">
             {notifications.map((notification) => (
               <div
                 key={notification._id}
@@ -162,7 +166,7 @@ const Notifications = () => {
                       <button
                         onClick={() => markAsRead(notification._id)}
                         disabled={actionLoading === notification._id}
-                        className="p-2 text-neutral-400 hover:text-orange-500 hover:bg-orange-100 rounded-lg transition-colors"
+                        className="p-2 text-neutral-400 hover:text-orange-500 hover:bg-orange-100 rounded-xl transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
                         title="Mark as read"
                       >
                         {actionLoading === notification._id ? (
@@ -175,7 +179,7 @@ const Notifications = () => {
                     <button
                       onClick={() => deleteNotification(notification._id)}
                       disabled={actionLoading === notification._id}
-                      className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                      className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-100 rounded-xl transition-all duration-200 hover:shadow-md transform hover:-translate-y-0.5"
                       title="Delete"
                     >
                       {actionLoading === notification._id ? (

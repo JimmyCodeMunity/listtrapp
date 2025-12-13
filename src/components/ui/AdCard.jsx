@@ -60,7 +60,7 @@ const AdCard = ({ product }) => {
         </div>
       )}
 
-      <div className="relative h-60 overflow-hidden bg-gray-100">
+      <div className="relative md:h-60 h-28 overflow-hidden bg-gray-100">
         <img
           className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
           src={`${url}/${product?.images?.[0]}`}
@@ -70,15 +70,15 @@ const AdCard = ({ product }) => {
           }}
         />
       </div>
-      <span className="absolute top-0 left-0 w-28 translate-y-4 -translate-x-6 -rotate-45 bg-black text-center text-sm text-white">
+      {/* <span className="absolute top-0 left-0 w-28 translate-y-4 -translate-x-6 -rotate-45 bg-black text-center text-sm text-white">
         Sale
-      </span>
-      <div className="mt-4 px-5 pb-5">
+      </span> */}
+      <div className="mt-4 md:px-5 px-2 md:pb-5 pb-3">
         <h5 className="text-md font-semibold tracking-tight text-slate-900 line-clamp-2 min-h-[48px]">
           {product?.title}
         </h5>
-        <div className="mt-2.5 mb-5 flex items-center justify-between">
-          <div className="flex items-center">
+        <div className="md:mt-2.5 mb-5 flex items-center justify-between">
+          {/* <div className="flex items-center">
             <span className="mr-2 rounded bg-yellow-200 px-2.5 py-0.5 text-xs font-semibold">
               5.0
             </span>
@@ -91,7 +91,7 @@ const AdCard = ({ product }) => {
             >
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
             </svg>
-          </div>
+          </div> */}
           <p>
             <span className="text-sm font-bold text-orange-600">
               KES.{product?.price?.toLocaleString()}
@@ -101,7 +101,7 @@ const AdCard = ({ product }) => {
         <div className="flex items-center justify-center">
           <button
             onClick={handleClick}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-full text-sm font-medium transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white md:py-2 py-1 rounded-full text-sm font-medium transition-colors"
           >
             View Details
           </button>

@@ -6,7 +6,7 @@ import api from "../lib/api";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 
-export const ProductReviews = ({ productId }) => {
+export const ProductReviews = ({ productId,isSeller }) => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +67,7 @@ export const ProductReviews = ({ productId }) => {
     <div className="w-full bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold">Customer Reviews</h3>
-        {user && !showForm && (
+        {user && !showForm && !isSeller && (
           <button
             onClick={() => setShowForm(true)}
             className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -78,7 +78,7 @@ export const ProductReviews = ({ productId }) => {
       </div>
 
       {/* Review Form */}
-      {showForm && (
+      {showForm && !isSeller && (
         <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg">
           <h4 className="font-semibold mb-3">Write Your Review</h4>
           

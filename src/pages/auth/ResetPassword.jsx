@@ -59,43 +59,52 @@ const ResetPasswordPage = () => {
       <div className="w-full max-w-md">
         <Link
           to="/auth/signin"
-          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-orange-500 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-orange-500 mb-6 transition-colors font-medium hover:underline"
         >
           <ArrowLeft size={16} />
           Back to sign in
         </Link>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8 relative overflow-hidden">
+          {/* Decorative background */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-orange-100 to-orange-200 rounded-full translate-y-12 -translate-x-12 opacity-30"></div>
+          
+          {/* Header */}
+          <div className="text-center mb-8 relative z-10">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl mb-6 shadow-lg">
+              <Lock className="text-white" size={32} />
+            </div>
+            <h1 className="text-3xl font-bold text-neutral-900 mb-2">
               Reset Password
-            </CardTitle>
-            <CardDescription className="text-center">
+            </h1>
+            <p className="text-neutral-600 text-lg">
               Enter your new password below
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePassReset} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
-                <div className="relative">
+            </p>
+          </div>
+          {/* Content */}
+          <div className="relative z-10">
+            <form onSubmit={handlePassReset} className="space-y-6">
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-neutral-700">New Password</label>
+                <div className="relative group">
                   <Lock
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-orange-500 transition-colors"
                     size={18}
                   />
-                  <Input
+                  <input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="w-full h-12 pl-12 pr-12 border-2 border-neutral-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-200 bg-white/50 backdrop-blur-sm placeholder:text-neutral-400"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-orange-500 transition-colors"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -105,26 +114,26 @@ const ResetPasswordPage = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-neutral-700">Confirm Password</label>
+                <div className="relative group">
                   <Lock
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-orange-500 transition-colors"
                     size={18}
                   />
-                  <Input
+                  <input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="w-full h-12 pl-12 pr-12 border-2 border-neutral-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-200 bg-white/50 backdrop-blur-sm placeholder:text-neutral-400"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-orange-500 transition-colors"
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -134,7 +143,7 @@ const ResetPasswordPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 {loading ? (
                   <>
@@ -162,13 +171,13 @@ const ResetPasswordPage = () => {
 
               <Link
                 to="/auth/signin"
-                className="w-full h-11 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 font-semibold rounded-lg transition-colors flex items-center justify-center"
+                className="w-full h-12 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 hover:border-orange-600 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center hover:shadow-md transform hover:-translate-y-0.5"
               >
                 Sign In
               </Link>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

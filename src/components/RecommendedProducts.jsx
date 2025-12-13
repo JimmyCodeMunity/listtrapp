@@ -8,12 +8,12 @@ import AdCard from "./ui/AdCard";
 const RecommendedProducts = () => {
   const { user, ads } = useAuth();
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-4 space-y-5">
+    <div className="w-full max-w-7xl mx-auto md:px-4 py-4 space-y-5">
       <div className="w-full flex flex-row justify-between items-center">
-        <h2 className="text-2xl font-bold">Recommended Products</h2>
+        <h2 className="md:text-2xl text-lg font-bold">Recommended Products</h2>
         <a
           href={`/marketplace`}
-          className="text-sm font-semibold text-neutral-500"
+          className="text-sm md:font-semibold font-normal text-neutral-500"
         >
           See All
         </a>

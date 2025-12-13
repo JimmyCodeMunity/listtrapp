@@ -144,7 +144,7 @@ export function SupportChatButton() {
       {/* Floating Button */}
       <button
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-orange-400 hover:bg-orange-500 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50"
       >
         {isOpen ? (
           <X className="w-6 h-6" />
@@ -164,7 +164,7 @@ export function SupportChatButton() {
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200">
           {/* Header */}
-          <div className="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+          <div className="bg-orange-400 text-white p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
               <div>
@@ -176,7 +176,7 @@ export function SupportChatButton() {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-blue-700 p-1 rounded"
+              className="hover:bg-orange-500 p-1 rounded"
             >
               <Minimize2 className="w-4 h-4" />
             </button>
@@ -202,12 +202,12 @@ export function SupportChatButton() {
                     <div
                       className={`max-w-[80%] rounded-lg px-3 py-2 ${
                         isUser
-                          ? "bg-blue-600 text-white"
+                          ? "bg-orange-400 text-white"
                           : "bg-white text-gray-900 border border-gray-200"
                       }`}
                     >
                       {!isUser && (
-                        <p className="text-xs font-semibold mb-1 text-blue-600">
+                        <p className="text-xs font-normal mb-1 text-orange-400">
                           Support Team
                         </p>
                       )}
@@ -238,12 +238,12 @@ export function SupportChatButton() {
                 onChange={(e) => setMessageText(e.target.value)}
                 placeholder="Type your message..."
                 disabled={sending || !connected}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
               />
               <button
                 type="submit"
                 disabled={sending || !messageText.trim() || !connected}
-                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-orange-400 hover:bg-orange-500 text-white p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>

@@ -69,7 +69,7 @@ const Navbar = () => {
         <div className="w-full flex flex-row items-center justify-between gap-4">
           <div className="flex-shrink-0">
             <Link to="/" className="text-2xl font-bold tracking-wider text-gray-900 hover:text-orange-500 transition-colors">
-              Littr
+              Listtr
             </Link>
           </div>
 
@@ -192,7 +192,7 @@ const Navbar = () => {
             </div>
             <div className="px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
               <Dropdown
-                label="Sell on Littr"
+                label="Sell on Listtr"
                 options={selloptions}
                 onSelect={(value) => console.log(value)}
               />

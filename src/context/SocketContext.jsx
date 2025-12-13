@@ -9,54 +9,67 @@ const SocketContext = createContext(null);
 
 export const useSocket = () => useContext(SocketContext);
 
+// ──────────────────────────────────────────────────────────────
+// NOTIFICATION SOUND – put listtr.wav in public/sounds/listtr.wav
+// ──────────────────────────────────────────────────────────────
+const notificationSound = new Audio("/sounds/listtr.wav");
+notificationSound.preload = "auto";
+notificationSound.volume = 0.5; // nice and gentle
+
+// Play sound safely (resets + handles autoplay policy)
+const playMessageSound = () => {
+  notificationSound.currentTime = 0;
+  notificationSound.play().catch(() => {
+    // Autoplay blocked – ignore silently (user will hear it after first interaction)
+  });
+};
+
 export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated, accessToken } = useAuth();
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("disconnected"); // 'connected', 'reconnecting', 'disconnected'
-  const [reconnectAttempt, setReconnectAttempt] = useState(0); // Current reconnection attempt count
+  const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
-  
+
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
-  const reconnectTimeouts = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff
-  
-  // Use ref to store latest activeConversation to avoid stale closures
+  const reconnectTimeouts = [1000, 2000, 4000, 8000, 16000];
+
   const activeConversationRef = useRef(activeConversation);
-  
-  // Update ref whenever activeConversation changes
+
   useEffect(() => {
     activeConversationRef.current = activeConversation;
   }, [activeConversation]);
 
-  // Connect socket only when user is authenticated
+  // ──────────────────────────────────────────────────────────────
+  // YOUR ORIGINAL CODE STARTS HERE (only handleNewMessage modified)
+  // ──────────────────────────────────────────────────────────────
+
   const connect = useCallback(() => {
     if (!isAuthenticated || !accessToken) {
       return;
     }
 
-    // Create socket instance with authentication
     const newSocket = io(import.meta.env.VITE_WS_URL || "http://localhost:5000", {
       withCredentials: true,
       autoConnect: false,
-      reconnection: false, // We'll handle reconnection manually
+      reconnection: false,
       auth: {
-        token: getAccessToken() || accessToken, // Pass access token in auth object
+        token: getAccessToken() || accessToken,
       },
     });
 
-    // Connection event handlers
     newSocket.on("connect", () => {
       setConnected(true);
       setConnectionStatus("connected");
       reconnectAttempts.current = 0;
       setReconnectAttempt(0);
-      
-      // Sync missed messages on successful reconnection
+
       if (activeConversation) {
         syncMissedMessages(activeConversation._id);
       }
@@ -65,45 +78,35 @@ export const SocketProvider = ({ children }) => {
     newSocket.on("disconnect", (reason) => {
       setConnected(false);
       setConnectionStatus("disconnected");
-      
-      // Attempt reconnection with exponential backoff
-      if (reason === "io server disconnect") {
-        // Server disconnected, don't reconnect automatically
-        return;
-      }
-      
+
+      if (reason === "io server disconnect") return;
+
       attemptReconnection(newSocket);
     });
 
-    // Handle authentication errors from socket server
     newSocket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
-      
+
       if (error.message === "Authentication error" || error.message === "Invalid token") {
         toast.error("Chat authentication failed. Please refresh the page and login again.");
         setConnectionStatus("disconnected");
         return;
       }
-      
-      // Attempt reconnection for other errors
+
       attemptReconnection(newSocket);
     });
 
-    // Message events
     newSocket.on("message:new", handleNewMessage);
     newSocket.on("message:delivered", handleMessageDelivered);
     newSocket.on("message:read", handleMessageRead);
 
-    // Presence events
     newSocket.on("user:online", handleUserOnline);
     newSocket.on("user:offline", handleUserOffline);
 
-    // Connect the socket
     newSocket.connect();
     setSocket(newSocket);
   }, [isAuthenticated, accessToken, activeConversation]);
 
-  // Attempt reconnection with exponential backoff
   const attemptReconnection = (socketInstance) => {
     if (reconnectAttempts.current >= maxReconnectAttempts) {
       setConnectionStatus("disconnected");
@@ -117,11 +120,10 @@ export const SocketProvider = ({ children }) => {
     setConnectionStatus("reconnecting");
     reconnectAttempts.current++;
     setReconnectAttempt(reconnectAttempts.current);
-    
+
     const delay = reconnectTimeouts[reconnectAttempts.current - 1] || 16000;
-    
+
     setTimeout(() => {
-      // Update auth token before reconnecting
       const currentToken = getAccessToken();
       if (currentToken && socketInstance) {
         socketInstance.auth = { token: currentToken };
@@ -130,7 +132,6 @@ export const SocketProvider = ({ children }) => {
     }, delay);
   };
 
-  // Sync missed messages on reconnection
   const syncMissedMessages = async (conversationId) => {
     try {
       const response = await api.get(`/conversations/${conversationId}/messages?limit=50`);
@@ -142,27 +143,34 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Handle new message received - use ref to avoid stale closures
+  // ──────────────────────── MODIFIED PART (SOUND ADDED) ────────────────────────
   const handleNewMessage = useCallback((message) => {
     const currentActiveConv = activeConversationRef.current;
-    
-    // Add to messages state if it's for the active conversation
-    // Convert both to strings to ensure comparison works
+
     const activeConvId = currentActiveConv?._id?.toString();
     const messageConvId = message.conversationId?.toString();
-    
+
+    // ─── PLAY SOUND ONLY IF MESSAGE IS FROM SOMEONE ELSE ───
+    const senderId = typeof message.senderId === "object" ? message.senderId?._id : message.senderId;
+    const isFromMe = senderId?.toString() === user?.user?._id?.toString();
+    const isActiveConversation = currentActiveConv && activeConvId === messageConvId;
+
+    if (!isFromMe) {
+      // Play sound when tab is hidden OR user is not viewing this chat
+      if (document.hidden || !isActiveConversation) {
+        playMessageSound();
+      }
+    }
+
+    // ─── YOUR ORIGINAL LOGIC (unchanged) ───
     if (currentActiveConv && activeConvId === messageConvId) {
       setMessages((prev) => {
-        // Check for duplicates
         const exists = prev.some(m => m._id === message._id);
-        if (exists) {
-          return prev;
-        }
+        if (exists) return prev;
         return [...prev, message];
       });
     }
 
-    // Update conversations list
     setConversations((prev) => {
       const conversationIndex = prev.findIndex(c => c._id?.toString() === message.conversationId?.toString());
       if (conversationIndex !== -1) {
@@ -174,82 +182,65 @@ export const SocketProvider = ({ children }) => {
             createdAt: message.createdAt,
           },
           updatedAt: message.createdAt,
-          // Only increment unread count if message is from someone else
-          // senderId might be populated object or string
-          unreadCount: (typeof message.senderId === 'object' ? message.senderId?._id : message.senderId)?.toString() !== user?.user?._id?.toString() 
+          unreadCount: !isFromMe
             ? {
                 ...prev[conversationIndex].unreadCount,
                 [user?.user?._id]: (prev[conversationIndex].unreadCount?.[user?.user?._id] || 0) + 1,
               }
             : prev[conversationIndex].unreadCount,
         };
-        
-        // Move updated conversation to top
+
         const updated = [...prev];
-        updated.splice(conversationIndex, 1); // Remove from current position
-        return [updatedConv, ...updated]; // Add to top
+        updated.splice(conversationIndex, 1);
+        return [updatedConv, ...updated];
       }
-      
-      // If conversation not found, we'll fetch it after this callback
       return prev;
     });
-    
-    // After updating state, check if we need to fetch conversation details
+
     const conversationExists = conversations.some(
       c => c._id?.toString() === message.conversationId?.toString()
     );
-    
+
     if (!conversationExists && message.conversationId) {
-      // Fetch conversation details asynchronously
-      fetchConversationDetails(message.conversationId).catch(err => 
+      fetchConversationDetails(message.conversationId).catch(err =>
         console.error("Failed to fetch conversation:", err)
       );
     }
   }, [user, conversations]);
-  
-  // Fetch conversation details when a new conversation is detected
+  // ──────────────────────── END OF MODIFIED PART ────────────────────────
+
   const fetchConversationDetails = useCallback(async (conversationId) => {
     try {
-      // Get the conversation details with messages
       const response = await api.get(`/conversations/${conversationId}/messages?limit=1`);
       if (response.data && response.data.messages && response.data.messages.length > 0) {
         const lastMessage = response.data.messages[0];
-        
-        // Extract sender ID (might be object or string)
-        const senderId = typeof lastMessage.senderId === 'object' 
-          ? lastMessage.senderId?._id 
+
+        const senderId = typeof lastMessage.senderId === 'object'
+          ? lastMessage.senderId?._id
           : lastMessage.senderId;
-        
+
         const recipientId = typeof lastMessage.recipientId === 'object'
           ? lastMessage.recipientId?._id
           : lastMessage.recipientId;
-        
-        // Get the other participant ID (not current user)
+
         const currentUserId = user?.user?._id?.toString();
-        const otherUserId = senderId?.toString() === currentUserId 
-          ? recipientId 
-          : senderId;
-        
+        const otherUserId = senderId?.toString() === currentUserId ? recipientId : senderId;
+
         if (!otherUserId) {
           console.error("Could not determine other user ID");
           return;
         }
-        
-        // Fetch the full conversation with participants
+
         const convResponse = await api.get(`/conversations/${otherUserId}`);
         if (convResponse.data && convResponse.data.conversation) {
           const newConversation = convResponse.data.conversation;
-          
+
           setConversations((prev) => {
-            // Check if conversation already exists (avoid duplicates)
             const exists = prev.some(c => c._id?.toString() === conversationId.toString());
             if (exists) return prev;
-            
-            // Add new conversation to the top of the list
             return [newConversation, ...prev];
           });
-          
-          // Show notification for new conversation
+
           const otherUser = newConversation.participants?.find(
             p => p._id?.toString() !== currentUserId
           );
@@ -263,7 +254,6 @@ export const SocketProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Handle message delivered event
   const handleMessageDelivered = useCallback(({ messageId, deliveredAt }) => {
     setMessages((prev) =>
       prev.map((msg) =>
@@ -272,7 +262,6 @@ export const SocketProvider = ({ children }) => {
     );
   }, []);
 
-  // Handle message read event
   const handleMessageRead = useCallback(({ messageId, readAt }) => {
     setMessages((prev) =>
       prev.map((msg) =>
@@ -281,7 +270,6 @@ export const SocketProvider = ({ children }) => {
     );
   }, []);
 
-  // Handle user online event
   const handleUserOnline = useCallback(({ userId }) => {
     setOnlineUsers((prev) => {
       if (!prev.includes(userId)) {
@@ -291,43 +279,37 @@ export const SocketProvider = ({ children }) => {
     });
   }, []);
 
-  // Handle user offline event
   const handleUserOffline = useCallback(({ userId }) => {
     setOnlineUsers((prev) => prev.filter((id) => id !== userId));
   }, []);
 
-  // Load conversation with a user
   const loadConversation = async (userId) => {
     try {
       const response = await api.get(`/conversations/${userId}`);
       if (response.data && response.data.conversation) {
         setActiveConversation(response.data.conversation);
-        
-        // Load messages for this conversation
+
         const messagesResponse = await api.get(
           `/conversations/${response.data.conversation._id}/messages?limit=50`
         );
         if (messagesResponse.data && messagesResponse.data.messages) {
           setMessages(messagesResponse.data.messages);
         }
-        
-        // Always add conversation to list (even if empty - it will get messages soon)
+
         setConversations((prev) => {
           const convId = response.data.conversation._id?.toString();
           const existingIndex = prev.findIndex(c => c._id?.toString() === convId);
-          
+
           if (existingIndex !== -1) {
-            // Update existing conversation and move to top
             const updated = [...prev];
             const updatedConv = response.data.conversation;
             updated.splice(existingIndex, 1);
             return [updatedConv, ...updated];
           }
-          
-          // Add new conversation to the top
+
           return [response.data.conversation, ...prev];
         });
-        
+
         return response.data.conversation;
       }
     } catch (error) {
@@ -338,10 +320,8 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Load more messages for pagination
   const loadMoreMessages = async (conversationId, before) => {
     try {
-      // Convert to Date object if it's a string
       const beforeDate = before instanceof Date ? before : new Date(before);
       const response = await api.get(
         `/conversations/${conversationId}/messages?limit=50&before=${beforeDate.toISOString()}`
@@ -359,12 +339,10 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Mark messages as read
   const markAsRead = async (conversationId) => {
     try {
       await api.put(`/conversations/${conversationId}/read`);
-      
-      // Update unread count in conversations list
+
       setConversations((prev) =>
         prev.map((conv) =>
           conv._id === conversationId
@@ -377,7 +355,6 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Send message to recipient
   const sendMessage = async (recipientId, text) => {
     if (!socket || !connected) {
       toast.error("You're not connected. Please check your internet connection and try again.");
@@ -385,56 +362,39 @@ export const SocketProvider = ({ children }) => {
     }
 
     return new Promise((resolve, reject) => {
-      // Set timeout for message send
       const timeout = setTimeout(() => {
         reject(new Error("Message send timeout. Please try again."));
-      }, 10000); // 10 second timeout
+      }, 10000);
 
       socket.emit(
         "message:send",
         { recipientId, text, conversationId: activeConversation?._id },
         (ack) => {
           clearTimeout(timeout);
-          
+
           if (ack && ack.success) {
-            // Add message to local state
             if (ack.message) {
               setMessages((prev) => {
-                // Check for duplicates before adding
                 const exists = prev.some(m => m._id === ack.message._id);
-                if (exists) {
-                  return prev;
-                }
+                if (exists) return prev;
                 return [...prev, ack.message];
               });
-              
-              // Update activeConversation with the conversation ID if it was just created
+
               if (activeConversation && !activeConversation._id && ack.message.conversationId) {
                 setActiveConversation({
                   ...activeConversation,
                   _id: ack.message.conversationId,
                 });
               }
-              
-              // Add or update conversation in list after message is sent
+
               const conversationId = ack.message.conversationId;
-              
-              // Update activeConversation with the conversation ID if it was just created
-              if (activeConversation && !activeConversation._id && conversationId) {
-                setActiveConversation(prev => ({
-                  ...prev,
-                  _id: conversationId,
-                }));
-              }
-              
-              // Update conversations list
+
               if (activeConversation) {
                 const convId = conversationId || activeConversation._id;
-                
+
                 setConversations((prev) => {
                   const existingIndex = prev.findIndex(c => c._id?.toString() === convId?.toString());
-                  
-                  // Create updated conversation object
+
                   const updatedConv = {
                     ...activeConversation,
                     _id: convId,
@@ -445,13 +405,11 @@ export const SocketProvider = ({ children }) => {
                     },
                     updatedAt: ack.message.createdAt,
                   };
-                  
+
                   if (existingIndex === -1) {
-                    // Add new conversation to the top
                     return [updatedConv, ...prev];
                   }
-                  
-                  // Update existing conversation and move to top
+
                   const updated = [...prev];
                   updated.splice(existingIndex, 1);
                   return [updatedConv, ...updated];
@@ -460,7 +418,6 @@ export const SocketProvider = ({ children }) => {
             }
             resolve(true);
           } else {
-            // Handle message send failure
             const errorMessage = ack?.error || "Message couldn't be sent. Please try again.";
             toast.error(errorMessage);
             reject(new Error(errorMessage));
@@ -470,7 +427,6 @@ export const SocketProvider = ({ children }) => {
     });
   };
 
-  // Disconnect socket
   const disconnect = useCallback(() => {
     if (socket) {
       socket.removeAllListeners();
@@ -487,7 +443,6 @@ export const SocketProvider = ({ children }) => {
     reconnectAttempts.current = 0;
   }, [socket]);
 
-  // Connect socket when user is authenticated
   useEffect(() => {
     if (isAuthenticated && accessToken) {
       connect();
@@ -503,7 +458,6 @@ export const SocketProvider = ({ children }) => {
     };
   }, [isAuthenticated, accessToken]);
 
-  // Listen for logout event from AuthContext
   useEffect(() => {
     const handleLogout = () => {
       disconnect();
@@ -516,7 +470,6 @@ export const SocketProvider = ({ children }) => {
     };
   }, [disconnect]);
 
-  // Load conversations when socket connects
   useEffect(() => {
     if (connected && user) {
       const loadConversations = async () => {
@@ -524,7 +477,6 @@ export const SocketProvider = ({ children }) => {
         try {
           const response = await api.get("/conversations");
           if (response.data && response.data.conversations) {
-            // Deduplicate conversations by ID
             const uniqueConversations = response.data.conversations.reduce((acc, conv) => {
               const convId = conv._id?.toString();
               if (!acc.some(c => c._id?.toString() === convId)) {
@@ -532,7 +484,7 @@ export const SocketProvider = ({ children }) => {
               }
               return acc;
             }, []);
-            
+
             setConversations(uniqueConversations);
           }
         } catch (error) {

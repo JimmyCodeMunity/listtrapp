@@ -49,7 +49,7 @@ const HomePage = () => {
           <div className="w-full py-6 md:py-10">
             <CategorySection />
           </div>
-          <div className="w-full py-6 sm:py-10 max-w-7xl mx-auto sm:px-16 px-6">
+          <div className="w-full py-6 sm:py-10 max-w-7xl mx-auto md:px-16 px-0">
             <DealsSection />
           </div>
 

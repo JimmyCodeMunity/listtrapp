@@ -41,7 +41,9 @@ function App() {
   return (
     <>
       <ScrollToTop />
-      <Toaster position="top-right" />
+      <Toaster 
+      
+      position="bottom-right" />
       {(
         <Routes>
           {/* Public Routes */}
@@ -99,7 +101,7 @@ function App() {
           />
 
           {/* Auth Routes */}
-          <Route path="auth/signin" element={<SignInPage />} />
+          <Route path="auth/signin" element={<LoginPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="auth/signup" element={<RegisterPage />} />
           <Route path="auth/forgot-credentials" element={<ForgotPage />} />

@@ -96,7 +96,7 @@ export function WishlistDrawer({ isOpen, onClose }) {
                       <div className="relative flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                         {item.images && item.images.length > 0 ? (
                           <img
-                            src={item.images[0]}
+                            src={`${import.meta.env.VITE_WS_URL}/${item.images[0]}`}
                             alt={item.title}
                             className="w-full h-full object-cover"
                           />
