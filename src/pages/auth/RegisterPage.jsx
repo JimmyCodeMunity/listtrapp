@@ -55,7 +55,7 @@ const RegisterPage = () => {
       password,
     };
 
-    const { status, data } = await handleSubmit("/createuser", body);
+    const { status, data } = await handleSubmit("/auth/createuser", body);
 
     if (status === 201) {
       toast.success(

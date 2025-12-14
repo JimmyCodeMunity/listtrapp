@@ -21,7 +21,7 @@ const Modals = () => {
 
     try {
       const { status, data } = await handleSubmit(
-        `/update-user-profile`,
+        `/auth/update-user-profile`,
         formData
       );
 

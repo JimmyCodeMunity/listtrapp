@@ -23,7 +23,7 @@ const VerifyPage = () => {
     setLoading(true);
     setError(false);
 
-    const { status, data } = await handleSubmit(`/verify-email/${token}`, {});
+    const { status, data } = await handleSubmit(`/auth/verify-email/${token}`, {});
 
     setLoading(false);
     if (status === 201) {
