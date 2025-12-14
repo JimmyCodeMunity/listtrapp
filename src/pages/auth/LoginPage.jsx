@@ -41,7 +41,19 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side Image - Hidden on mobile, visible on md+ (exactly like your working page) */}
-      <div className="hidden md:block w-1/2">
+      <div className="hidden md:block w-1/2 relative">
+        <div className="w-full absolute top-40 left-20">
+         <div className="w-full space-y-5">
+           {/* <h1 className="text-white text-5xl font-semibold">Welcome to Listtr</h1> */}
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white">
+            Great to have you back! 🚀
+          </h1>
+          <p className="text-lg md:text-xl text-gray-200">
+            Dive into the latest deals, trending products, and exclusive offers
+            just for you.
+          </p>
+         </div>
+        </div>
         <img
           src="../images/side2.jpg"
           alt="Marketplace illustration"
@@ -80,7 +92,9 @@ const LoginPage = () => {
                 alt="Google"
                 className="h-5 w-5"
               />
-              <span className="text-gray-700 font-medium">Continue with Google</span>
+              <span className="text-gray-700 font-medium">
+                Continue with Google
+              </span>
             </button>
 
             {/* Divider */}
@@ -92,9 +106,15 @@ const LoginPage = () => {
 
             {/* Email Input */}
             <div>
-              <label htmlFor="email" className="sr-only">Email</label>
+              <label htmlFor="email" className="sr-only">
+                Email
+              </label>
               <div className="flex items-center h-12 bg-white border border-gray-300 rounded-full pl-5 pr-4 shadow-sm">
-                <svg className="w-5 h-5 text-gray-500 mr-3" viewBox="0 0 16 11" fill="currentColor">
+                <svg
+                  className="w-5 h-5 text-gray-500 mr-3"
+                  viewBox="0 0 16 11"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     clipRule="evenodd"
@@ -116,9 +136,15 @@ const LoginPage = () => {
 
             {/* Password Input */}
             <div>
-              <label htmlFor="password" className="sr-only">Password</label>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
               <div className="flex items-center h-12 bg-white border border-gray-300 rounded-full pl-5 pr-4 shadow-sm">
-                <svg className="w-5 h-5 text-gray-500 mr-3" viewBox="0 0 13 17" fill="currentColor">
+                <svg
+                  className="w-5 h-5 text-gray-500 mr-3"
+                  viewBox="0 0 13 17"
+                  fill="currentColor"
+                >
                   <path d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z" />
                 </svg>
                 <input
@@ -137,10 +163,19 @@ const LoginPage = () => {
             {/* Remember me + Forgot password */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="remember" className="h-4 w-4 text-orange-600 rounded" />
-                <label htmlFor="remember" className="text-gray-600">Remember me</label>
+                <input
+                  type="checkbox"
+                  id="remember"
+                  className="h-4 w-4 text-orange-600 rounded"
+                />
+                <label htmlFor="remember" className="text-gray-600">
+                  Remember me
+                </label>
               </div>
-              <Link to="/auth/forgot-credentials" className="text-orange-600 hover:text-orange-700 font-medium">
+              <Link
+                to="/auth/forgot-credentials"
+                className="text-orange-600 hover:text-orange-700 font-medium"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -164,7 +199,10 @@ const LoginPage = () => {
             {/* Sign up link */}
             <p className="text-center text-sm text-gray-600">
               Don’t have an account?{" "}
-              <Link to="/auth/signup" className="text-orange-600 hover:text-orange-700 font-semibold">
+              <Link
+                to="/auth/signup"
+                className="text-orange-600 hover:text-orange-700 font-semibold"
+              >
                 Sign up
               </Link>
             </p>
