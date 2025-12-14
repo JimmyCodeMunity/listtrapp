@@ -32,6 +32,9 @@ const AdCard = ({ product }) => {
     navigate(`/product/${product._id}`);
   };
 
+  // check isUser
+  
+
   return (
     <div
       onClick={handleClick}
@@ -39,7 +42,7 @@ const AdCard = ({ product }) => {
     >
       {/* Wishlist Button */}
       <button
-        onClick={handleWishlistToggle}
+        // onClick={handleWishlistToggle}
         disabled={operationLoading}
         className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all duration-200 shadow-md disabled:opacity-50"
       >

@@ -60,9 +60,17 @@ const Navbar = () => {
   }, [lastScrollY]);
 
   return (
+    <div>
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-0 w-96 h-32 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      </div>
+    
     <div
-      className={`w-full max-w-7xl mx-auto md:px-6 px-4 bg-white py-4 sticky top-0 z-50 transition-all duration-300 shadow-sm`}
+      className={`w-full relative max-w-7xl mx-auto md:px-6 px-4 bg-transparent py-4 sticky top-0 z-50 transition-all duration-300 `}
     >
+      
       {/* Main Navbar Row */}
       <div className="w-full flex flex-col gap-3">
         {/* Top Row: Logo, Search, Icons */}
@@ -224,6 +232,7 @@ const Navbar = () => {
 
       {/* Wishlist Drawer */}
       <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+    </div>
     </div>
   );
 };

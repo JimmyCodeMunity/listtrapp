@@ -50,7 +50,7 @@ const FeaturedAdsSection = () => {
   }
 
   return (
-    <section className="py-12 bg-gradient-to-br from-orange-50 to-yellow-50">
+    <section className="py-12 bg-white from-orange-50 to-yellow-50 w-full">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">

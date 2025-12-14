@@ -12,14 +12,17 @@ import Faq from "../components/Faq";
 import Brands from "../components/Brands";
 import SearchArea from "../components/SearchArea";
 import FeaturedAdsSection from "../components/FeaturedAdsSection";
+import Hero from "../components/Hero";
 
 const HomePage = () => {
   return (
     <div>
       <AppLayout>
+        <Hero/>
         <div className="md:py-8 py-3 md:px-0 px-4 mx-auto max-w-7xl">
+          
           {/* carousel and banner */}
-          <div className="w-full flex flex-row items-center space-x-4 justify-between">
+          {/* <div className="w-full flex flex-row items-center space-x-4 justify-between">
             <div className="md:block hidden w-[30%] h-[300px]">
               <div className="bg-neutral-200 rounded-xl h-full overflow-hidden">
                 <img
@@ -41,14 +44,14 @@ const HomePage = () => {
                 />
               </div>
             </div>
-          </div>
+          </div> */}
           {/* search sections */}
           {/* <SearchArea /> */}
 
           {/* categories */}
-          <div className="w-full py-6 md:py-10">
+          {/* <div className="w-full py-6 md:py-10">
             <CategorySection />
-          </div>
+          </div> */}
           <div className="w-full py-6 sm:py-10 max-w-7xl mx-auto md:px-16 px-0">
             <DealsSection />
           </div>
