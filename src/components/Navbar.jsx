@@ -162,8 +162,7 @@ const Navbar = () => {
           onSubmit={handleSearch}
           className={`px-0 w-full block md:hidden h-9 border border-gray-300 rounded-full flex flex-row items-center justify-between transition-all duration-200 ease-in-out transform bg-gray-50 ${
             isSearchVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-4 h-0"
+              && "opacity-100 translate-y-0"
           } overflow-hidden`}
         >
           <div className="flex flex-row items-center pl-3">

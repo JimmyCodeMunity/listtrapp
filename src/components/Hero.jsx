@@ -21,14 +21,14 @@ const Hero = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
+        <h1 className="text-3xl md:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
           Discover Amazing
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-600">
             Products Everyday
           </span>
         </h1>
 
-        <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto">
+        <p className="text-lg md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto">
           Shop millions of products from top sellers. Fast delivery, great prices, and secure shopping.
         </p>
 
@@ -39,9 +39,9 @@ const Hero = () => {
             <input
               type="text"
               placeholder="Search for products, brands, and more..."
-              className="w-full pl-14 pr-6 py-5 text-lg rounded-full shadow-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-orange-200 focus:border-orange-400 transition-all"
+              className="w-full pl-14 pr-6 md:py-5 py-3 text-lg rounded-full shadow-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-orange-200 focus:border-orange-400 transition-all"
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors">
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-orange-600 hover:bg-orange-700 text-white md:px-8 px-3 md:py-3 py-2 rounded-full font-semibold transition-colors">
               Search
             </button>
           </div>
