@@ -43,7 +43,7 @@ const ResetPasswordPage = () => {
 
     setLoading(true);
     const body = { password };
-    const { status, data } = await handleSubmit(`/reset-password/${token}`, body);
+    const { status, data } = await handleSubmit(`/auth/reset-password/${token}`, body);
 
     setLoading(false);
     if (status === 200) {

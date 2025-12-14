@@ -30,7 +30,7 @@ const ForgotPage = () => {
     setLoading(true);
     const body = { email };
     const { status, data } = await handleSubmit(
-      `/send-forgot-password-link`,
+      `/auth/send-forgot-password-link`,
       body
     );
 
